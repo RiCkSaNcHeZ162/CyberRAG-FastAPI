@@ -1,0 +1,41 @@
+#core_frameworkss
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic-settings==2.7.1
+
+# Vector Store
+faiss-cpu==1.9.0.post1
+
+#pdf processing
+pymupdf4llm
+
+# LangChain
+langchain==0.3.18
+langchain-community==0.3.17
+langchain-huggingface==0.1.2
+langchain-text-splitters==0.3.6
+
+
+
+# Embeddings & Reranking
+sentence-transformers==3.4.1
+torch>=2.0.0
+
+# Async Support
+aiofiles==24.1.0
+httpx==0.28.1
+
+# Utilities
+python-dotenv==1.0.1
+numpy>=1.24.0
+tiktoken==0.8.0
+uuid6==2024.7.10
+streamlit>=1.39.0
+
+# BM25 Keyword Search
+rank-bm25==0.2.2
+
+# LLM Provider (Free)
+groq==0.15.0
+huggingface_hub

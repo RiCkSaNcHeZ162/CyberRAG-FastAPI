@@ -16,13 +16,17 @@ class PDFSummary:
         for index, page in enumerate(processed_pages):
             if page.type == "image":
                 if index != 0 or text_processed != 0:
-                    logger.info("waiting for 25 seconds to call the function")
-                    await asyncio.sleep(25)
+                    logger.info("waiting for 30 seconds to call the function")
+                    await asyncio.sleep(
+                        30
+                    )  # added this much time to tackle free usage limits of groq VLM can be reduced if you have paid version
                 await self.summarize_images(page)
             elif page.type == "table":
-                if index != 0:
-                    logger.info("waiting for 25 seconds to call the function")
-                    await asyncio.sleep(25)
+                if index != 0 or text_processed != 0:
+                    logger.info("waiting for 30 seconds to call the function")
+                    await asyncio.sleep(
+                        30
+                    )  # added this much time to tackle free usage limits of groq VLM can be reduced if you have paid version
                 await self.summarize_tables(page)
             else:
                 text_processed += 1
@@ -31,7 +35,7 @@ class PDFSummary:
     async def summarize_images(self, page: PdfData) -> None:
         images = page.data.get("images", [])
         for image in images:
-            doc_id = image["doc_id"]
+            doc_id = image["img_id"]
             # prompt to summarize image
             prompt = """doc_id: {doc_id}
 
@@ -79,12 +83,13 @@ class PDFSummary:
 
             summary = response.strip().lower().replace('"', "").replace("'", "")
             image["text"] = summary
+            del image["data"]  # do not store in vectorstore
 
     async def summarize_tables(self, page: PdfData) -> None:
         tables = page.data.get("tables", [])
         for table in tables:
             table_markdown = table["data"]
-            doc_id = table["doc_id"]
+            doc_id = table["tbl_id"]
             # prompt to summarize table
             prompt = """ doc_id: {doc_id}
                 You are indexing a table extracted from a document for a    
@@ -128,7 +133,7 @@ class PDFSummary:
                     5. DOC ID
                         - Include the doc_id in your summary for traceability
                     """
-            system_prompt = """You are indexing a table extracted from a document for a    
+            system_prompt = """You are indexing a table extracted from a document for a
                     semantic search system. Your summary will be converted into
                     a vector embedding, so it must be detailed enough to match
                     any reasonable question a user might ask about this table."""
@@ -144,3 +149,4 @@ class PDFSummary:
 
             summary = response.strip().lower().replace('"', "").replace("'", "")
             table["text"] = summary
+            del table["data"]  # do not save in vectorstore

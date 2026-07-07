@@ -17,15 +17,12 @@ class Settings(BaseSettings):
     )
 
     # ── LLM Provider ──────────────────────────────────────────────
-    LLM_PROVIDER: Literal["groq", "ollama", "multimodal"] = "groq"
+    LLM_PROVIDER: Literal["groq", "ollama"] = "groq"
 
     # Groq
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "qwen/qwen3.6-27b"
+    GROQ_MODEL: str = "qwen/qwen3.6-27b"  # VLM
 
-    # multimodal
-    HF_TOKEN: str = ""
-    MULTIMODAL_MODEL: str = "openai/gpt-oss-120b"
     # Ollama
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"

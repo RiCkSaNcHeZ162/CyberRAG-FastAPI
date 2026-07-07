@@ -7,6 +7,7 @@ content and attaches structure metadata to each chunk.
 
 import logging
 import re
+from typing import Any
 
 from app.config import settings
 from app.core.chunking.recursive_chunker import RecursiveChunker
@@ -37,16 +38,16 @@ class ContextAwareChunker:
 
         # Patterns for detecting headers / section titles
         self._header_patterns = [
-            r'^#{1,6}\s+(.+)',                          # Markdown headers
-            r'^(?:Chapter|Section|Part)\s+\d+[.:]\s*(.*)',  # Chapter/Section headings
-            r'^(\d+\.)+\s+(.+)',                        # Numbered sections (1.2.3 Title)
-            r'^[A-Z][A-Z\s]{3,}$',                    # ALL CAPS lines (likely headers)
-            r'^(?:Abstract|Introduction|Conclusion|Summary|References|Appendix)\s*$',  # Standard sections
+            r"^#{1,6}\s+(.+)",  # Markdown headers
+            r"^(?:Chapter|Section|Part)\s+\d+[.:]\s*(.*)",  # Chapter/Section headings
+            r"^(\d+\.)+\s+(.+)",  # Numbered sections (1.2.3 Title)
+            r"^[A-Z][A-Z\s]{3,}$",  # ALL CAPS lines (likely headers)
+            r"^(?:Abstract|Introduction|Conclusion|Summary|References|Appendix)\s*$",  # Standard sections
         ]
 
     def chunk_pages(
         self,
-        pages: list[dict[str, any]],
+        pages: list[dict[str, Any]],
         metadata: dict | None = None,
     ) -> list[Chunk]:
         """
@@ -88,14 +89,18 @@ class ContextAwareChunker:
                 section_chunks = self._recursive_chunker.chunk(section_text)
 
                 for chunk in section_chunks:
-                    chunk.metadata.update({
-                        **base_metadata,
-                        "strategy": "context_aware",
-                        "page_number": page_num,
-                        "section": current_section,
-                        "section_hierarchy": " > ".join(section_hierarchy) if section_hierarchy else current_section,
-                        "context_prefix": f"[Page {page_num} | {current_section}] ",
-                    })
+                    chunk.metadata.update(
+                        {
+                            **base_metadata,
+                            "strategy": "context_aware",
+                            "page_number": page_num,
+                            "section": current_section,
+                            "section_hierarchy": " > ".join(section_hierarchy)
+                            if section_hierarchy
+                            else current_section,
+                            "context_prefix": f"[Page {page_num} | {current_section}] ",
+                        }
+                    )
                     chunk.page_numbers = [page_num]
                     all_chunks.append(chunk)
 
@@ -154,9 +159,7 @@ class ContextAwareChunker:
 
         return None
 
-    def _update_hierarchy(
-        self, hierarchy: list[str], new_title: str
-    ) -> list[str]:
+    def _update_hierarchy(self, hierarchy: list[str], new_title: str) -> list[str]:
         """Update section hierarchy with a new title."""
         # Simple heuristic: if new title looks like a sub-section, append
         # otherwise, reset to top level

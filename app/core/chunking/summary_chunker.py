@@ -39,14 +39,14 @@ class SummaryChunker:
                 for img in page.data.get("images", []):
                     chunks.append(
                         Chunk(
-                            content=f"[Summary of Image: {img['summary']}]",
+                            content=f"[Summary of Image: {img['text']}]",
                             metadata={
                                 **base_metadata,
                                 "page_number": page.page_number,
                                 "element_type": "image",
-                                "doc_id": img["doc_id"],
+                                "img_id": img["img_id"],
                             },
-                            chunk_id=f"img_{img['doc_id']}",
+                            chunk_id=f"img_{img['img_id']}",
                             page_numbers=[page.page_number],
                         )
                     )
@@ -54,14 +54,14 @@ class SummaryChunker:
                 for tbl in page.data.get("tables", []):
                     chunks.append(
                         Chunk(
-                            content=f"[Summary of Table: {tbl['summary']}]",
+                            content=f"[Summary of Table: {tbl['text']}]",
                             metadata={
                                 **base_metadata,
                                 "page_number": page.page_number,
                                 "element_type": "table",
-                                "doc_id": tbl["doc_id"],
+                                "tbl_id": tbl["tbl_id"],
                             },
-                            chunk_id=f"tbl_{tbl['doc_id']}",
+                            chunk_id=f"tbl_{tbl['tbl_id']}",
                             page_numbers=[page.page_number],
                         )
                     )

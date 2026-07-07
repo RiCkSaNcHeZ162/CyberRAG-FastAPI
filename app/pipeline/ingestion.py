@@ -11,6 +11,7 @@ from app.config import settings
 from app.core.chunking.context_aware import ContextAwareChunker
 from app.core.chunking.recursive_chunker import RecursiveChunker
 from app.core.chunking.semantic_chunker import Chunk, SemanticChunker
+from app.core.chunking.summary_chunker import SummaryChunker
 from app.core.embedding.embedding_manager import EmbeddingManager
 from app.core.media.media_handler import MediaHandler
 from app.core.summary.summary import PDFSummary
@@ -45,6 +46,7 @@ class IngestionPipeline:
         self._semantic_chunker = None
         self._recursive_chunker = RecursiveChunker()
         self._context_aware_chunker = ContextAwareChunker()
+        self._summary_chunker = SummaryChunker()
 
     def _get_semantic_chunker(self) -> SemanticChunker:
         """Lazy-load semantic chunker (shares embedding model)."""
@@ -219,7 +221,7 @@ class IngestionPipeline:
         pattern = r"!\[.*?\]\(data:image/(.*?);base64,(.*?)\)"
         matches = re.findall(pattern, markdown_text)
         data = [
-            {"format": m[0], "data": m[1], "doc_id": str(uuid.uuid4())} for m in matches
+            {"format": m[0], "data": m[1], "img_id": str(uuid.uuid4())} for m in matches
         ]
         if len(data):
             # save images for future querying
@@ -251,8 +253,8 @@ class IngestionPipeline:
                 current_table.append(line)
             else:
                 if len(current_table) > 2:  # at least header + separator + 1 row
-                    doc_id = str(uuid.uuid4())
-                    tables.append({"data": "\n".join(current_table), "doc_id": doc_id})
+                    tbl_id = str(uuid.uuid4())
+                    tables.append({"data": "\n".join(current_table), "tbl_id": tbl_id})
                 current_table = []
         if len(tables):
             self.media_handler.save_tables_to_disk(tables)
@@ -306,7 +308,9 @@ class IngestionPipeline:
         )
 
         # handle photos and tables as separate chunks
-        separate_chunks = self._chunk_non_text_elements(pages, base_metadata)
+        separate_chunks = self._summary_chunker._chunk_non_text_elements(
+            pages, base_metadata
+        )
         chunks.extend(separate_chunks)
         return chunks
 

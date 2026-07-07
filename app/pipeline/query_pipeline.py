@@ -17,6 +17,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from app.core.llm.llm_manager import LLMManager
+from app.core.media.media_handler import MediaHandler
 from app.core.memory.conversation_memory import ConversationMemory
 from app.core.retrieval.hybrid_retriever import HybridRetriever
 from app.core.retrieval.query_rewriter import QueryRewriter
@@ -35,11 +36,13 @@ class QueryPipeline:
         hybrid_retriever: HybridRetriever,
         query_rewriter: QueryRewriter,
         memory: ConversationMemory,
+        media_handler: MediaHandler,
     ):
         self.llm = llm_manager
         self.retriever = hybrid_retriever
         self.query_rewriter = query_rewriter
         self.memory = memory
+        self.media_handler = media_handler
 
     async def query(
         self,
@@ -82,9 +85,12 @@ class QueryPipeline:
                 "sources": [],
             }
         retrieved_docs = retrieved[:5]
-
+        img_list = self.pull_images_from_id(retrieved_docs)
+        tbl_list = self.pull_tables_from_id(retrieved_docs)
         # Step 6: Generate answer
-        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs])
+        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs]).join(
+            [tbl_md for tbl_md in tbl_list]
+        )
         prompt = self._build_answer_prompt(contextualized, context)
         answer = await self.llm.generate(
             prompt=prompt,
@@ -95,6 +101,7 @@ class QueryPipeline:
             ),
             temperature=0.1,
             max_tokens=2048,
+            images=img_list,
         )
         answer = answer.strip()
 
@@ -147,8 +154,12 @@ class QueryPipeline:
             yield "I couldn't find relevant information in the documents to answer your question."
             return
         retrieved_docs = retrieved[:5]
-
-        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs])
+        img_list = self.pull_images_from_id(retrieved_docs)
+        tbl_list = self.pull_tables_from_id(retrieved_docs)
+        # Step 6: Generate answer
+        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs]).join(
+            [tbl_md for tbl_md in tbl_list]
+        )
         prompt = self._build_answer_prompt(contextualized, context)
 
         # Stream the answer
@@ -161,6 +172,7 @@ class QueryPipeline:
             ),
             temperature=0.1,
             max_tokens=2048,
+            images=img_list,
         ):
             full_answer += token
             yield token
@@ -187,3 +199,27 @@ INSTRUCTIONS:
 - Use bullet points or numbered lists for clarity when appropriate
 
 ANSWER:"""
+
+    def pull_images_from_id(self, retrieved_documents: list[dict[str, Any]]):
+        img_list = []
+        for document in retrieved_documents:
+            metadata = document["metadata"]
+            if metadata.get("img_id"):
+                image_id = metadata.get("img_id")
+                img_bs64 = self.media_handler.get_image(image_id=image_id)
+                img_list.append({"data": img_bs64, "format": "png"})
+        return img_list
+
+    def pull_tables_from_id(self, retrieved_documents: list[dict[str, Any]]):
+        tbl_list = []
+        for document in retrieved_documents:
+            metadata = document["metadata"]
+            if metadata.get("tbl_id"):
+                image_id = metadata.get("tbl_id")
+                tbl_md = self.media_handler.get_tables(image_id=image_id)
+                tbl_list.append(
+                    {
+                        "data": tbl_md,
+                    }
+                )
+        return tbl_list

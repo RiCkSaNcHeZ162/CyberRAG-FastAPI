@@ -87,4 +87,5 @@ def get_query_pipeline() -> QueryPipeline:
         hybrid_retriever=get_hybrid_retriever(),
         query_rewriter=get_query_rewriter(),
         memory=get_memory(),
+        media_handler=get_media_handler()
     )

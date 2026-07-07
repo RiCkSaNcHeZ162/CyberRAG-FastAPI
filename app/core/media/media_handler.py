@@ -14,15 +14,15 @@ class MediaHandler:
 
     def save_images_to_disk(self, images: list[dict]):
         for image in images:
-            image_path = settings.IMAGE_DIR / f"{image['doc_id']}.png"
+            image_path = settings.IMAGE_DIR / f"{image['img_id']}.png"
             image_bytes = base64.b64decode(image["data"])
             try:
                 with open(image_path, "wb") as f:
                     f.write(image_bytes)
-                logger.info(f"Image: {image['doc_id']} saved at {image_path}")
+                logger.info(f"Image: {image['img_id']} saved at {image_path}")
             except Exception as e:
                 raise HTTPException(
-                    status=500, detail=f"Failed to save image: ({image['doc_id']}): {e}"
+                    status=500, detail=f"Failed to save image: ({image['img_id']}): {e}"
                 ) from e
 
     def get_image(self, image_id: str) -> str:
@@ -35,13 +35,13 @@ class MediaHandler:
                 status_code=500, detail=f"Failed to save file: {e}"
             ) from e
 
-        image_base64 = base64.b64encode(image_bytes)
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
         return image_base64
 
     def save_tables_to_disk(self, tables: list[dict]):
         for tbl in tables:
-            table_id = tbl["doc_id"]
+            table_id = tbl["tbl_id"]
             table_md = tbl["data"]
             table_path = settings.TABLE_DIR / f"{table_id}.md"
             try:
@@ -63,4 +63,4 @@ class MediaHandler:
                 status_code=500, detail=f"Failed to save file: {e}"
             ) from e
 
-        return table
+        return table.decode("utf-8")

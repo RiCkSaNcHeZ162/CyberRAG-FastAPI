@@ -3,3 +3,4 @@ venv/
 .vscode/
 ruff.toml
 data/
+__pycache__/

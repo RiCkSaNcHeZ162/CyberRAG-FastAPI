@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 import httpx
 from groq import AsyncGroq
+from openai import AsyncOpenAI
 
 from app.config import settings
 
@@ -38,6 +39,7 @@ class LLMManager:
         self.provider = settings.LLM_PROVIDER
         self._groq_client: AsyncGroq | None = None
         self._http_client: httpx.AsyncClient | None = None
+        self._openai_client: AsyncOpenAI | None = None
 
         if self.provider == "groq":
             if (
@@ -55,6 +57,8 @@ class LLMManager:
                 base_url=settings.OLLAMA_BASE_URL,
                 timeout=120.0,
             )
+        elif self.provider == "openai":
+            self._openai_client = AsyncOpenAI(api_key=settings.OPEN_AI_API_KEY)
 
         logger.info(f"LLM Manager initialized with provider: {self.provider}")
 
@@ -73,6 +77,10 @@ class LLMManager:
             )
         elif self.provider == "ollama":
             return await self._ollama_generate(
+                prompt, system_prompt, temperature, max_tokens, images
+            )
+        elif self.provider == "openai":
+            return await self._openai_generate(
                 prompt, system_prompt, temperature, max_tokens, images
             )
         else:
@@ -99,6 +107,97 @@ class LLMManager:
                 yield token
         else:
             raise ValueError(f"Unknown LLM provider: {self.provider}")
+
+    # ── Groq Implementation ──────────────────────────────────────
+
+    async def _openai_generate(
+        self,
+        prompt: str,
+        system_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        images: list[dict] | None,
+    ) -> str:
+        if not self._openai_client:
+            raise RuntimeError(
+                "OpenAI client not initialized. Check your OPENAI_API_KEY."
+            )
+        user_content = []
+        if images:
+            user_content = [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/{img['format']};base64,{img['data']}"
+                    },
+                }
+                for img in images
+            ]
+        user_content.append({"type": "text", "text": prompt})
+        for attempt in range(3):
+            try:
+                response = await self._openai_client.chat.completions.create(
+                    model=settings.OPENAI_MODEL,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {
+                            "role": "user",
+                            "content": user_content,
+                        },
+                    ],
+                    temperature=temperature,
+                    max_completion_tokens=3000,
+                )
+                return response.choices[0].message.content or ""
+            except Exception as e:
+                logger.warning(f"Groq attempt {attempt + 1} failed: {e}")
+                if attempt == 2:
+                    raise
+                await asyncio.sleep(2**attempt)
+        return ""
+
+    async def _openai_stream(
+        self,
+        prompt: str,
+        system_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        images: list[dict[str, Any]],
+    ) -> AsyncGenerator[str, None]:
+        if not self._openai_client:
+            raise RuntimeError(
+                "OpenAI client not initialized. Check your GROQ_API_KEY."
+            )
+        user_content = []
+        if images:
+            user_content = [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/{img['format']};base64,{img['data']}"
+                    },
+                }
+                for img in images
+            ]
+        user_content.append({"type": "text", "text": prompt})
+        stream = await self._openai_client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_content,
+                },
+            ],
+            temperature=temperature,
+            max_completion_tokens=3000,
+            stream=True,
+        )
+
+        async for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                yield delta.content
 
     # ── Groq Implementation ──────────────────────────────────────
 

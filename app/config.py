@@ -17,11 +17,15 @@ class Settings(BaseSettings):
     )
 
     # ── LLM Provider ──────────────────────────────────────────────
-    LLM_PROVIDER: Literal["groq", "ollama"] = "groq"
+    LLM_PROVIDER: Literal["groq", "ollama", "openai"] = "openai"
 
     # Groq
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "qwen/qwen3.6-27b"  # VLM
+
+    # OpenAI
+    OPEN_AI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     # Ollama
     OLLAMA_BASE_URL: str = "http://localhost:11434"

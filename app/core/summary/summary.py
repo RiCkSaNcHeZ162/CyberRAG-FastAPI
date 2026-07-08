@@ -16,17 +16,13 @@ class PDFSummary:
         for index, page in enumerate(processed_pages):
             if page.type == "image":
                 if index != 0 or text_processed != 0:
-                    logger.info("waiting for 30 seconds to call the function")
-                    await asyncio.sleep(
-                        30
-                    )  # added this much time to tackle free usage limits of groq VLM can be reduced if you have paid version
+                    logger.info("waiting for 5 seconds to call the function")
+                    await asyncio.sleep(5)
                 await self.summarize_images(page)
             elif page.type == "table":
                 if index != 0 or text_processed != 0:
-                    logger.info("waiting for 30 seconds to call the function")
-                    await asyncio.sleep(
-                        30
-                    )  # added this much time to tackle free usage limits of groq VLM can be reduced if you have paid version
+                    logger.info("waiting for 5 seconds to call the function")
+                    await asyncio.sleep(5)
                 await self.summarize_tables(page)
             else:
                 text_processed += 1

@@ -1,0 +1,38 @@
+# ===========================================
+# CyberRAG - GenAI Powered Cyber Security Audit Intelligence Configuration
+# ===========================================
+# Copy this file to .env and fill in your values
+
+# LLM Provider: "groq" or "ollama"
+LLM_PROVIDER=groq
+
+# Groq API Key (free at https://console.groq.com)
+GROQ_API_KEY=""
+
+# Groq Model
+GROQ_MODEL=qwen/qwen3.6-27b    #free vlm by groq
+
+# Ollama settings (if using ollama)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+
+# Embedding Model (HuggingFace - runs locally, free)
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+
+# Reranker Model (HuggingFace - runs locally, free)
+RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# Chunking Settings
+CHUNK_SIZE=512
+CHUNK_OVERLAP=50
+CHUNKING_STRATEGY=semantic
+
+# Retrieval Settings
+TOP_K_RETRIEVAL=20
+TOP_K_RERANK=5
+HYBRID_ALPHA=0.5
+
+# Server Settings
+HOST=0.0.0.0
+PORT=8000
+CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]

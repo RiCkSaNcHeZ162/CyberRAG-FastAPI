@@ -88,10 +88,10 @@ class QueryPipeline:
         img_list = self.pull_images_from_id(retrieved_docs)
         tbl_list = self.pull_tables_from_id(retrieved_docs)
         # Step 6: Generate answer
-        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs]).join(
-            [tbl_md for tbl_md in tbl_list]
-        )
-        prompt = self._build_answer_prompt(contextualized, context)
+        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs])
+        tables_context = "\n\n---\n\n".join([tbl_md["data"] for tbl_md in tbl_list])
+        combined = "\n\n---\n\n".join(filter(None, [context, tables_context]))
+        prompt = self._build_answer_prompt(contextualized, combined)
         answer = await self.llm.generate(
             prompt=prompt,
             system_prompt=(
@@ -153,15 +153,14 @@ class QueryPipeline:
         if not retrieved:
             yield "I couldn't find relevant information in the documents to answer your question."
             return
-        retrieved_docs = retrieved[:5]
+        retrieved_docs = retrieved[:3]
         img_list = self.pull_images_from_id(retrieved_docs)
         tbl_list = self.pull_tables_from_id(retrieved_docs)
         # Step 6: Generate answer
-        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs]).join(
-            [tbl_md for tbl_md in tbl_list]
-        )
-        prompt = self._build_answer_prompt(contextualized, context)
-
+        context = "\n\n---\n\n".join([doc["text"] for doc in retrieved_docs])
+        tables_context = "\n\n---\n\n".join([tbl_md["data"] for tbl_md in tbl_list])
+        combined = "\n\n---\n\n".join(filter(None, [context, tables_context]))
+        prompt = self._build_answer_prompt(contextualized, combined)
         # Stream the answer
         full_answer = ""
         async for token in self.llm.generate_stream(
@@ -215,8 +214,8 @@ ANSWER:"""
         for document in retrieved_documents:
             metadata = document["metadata"]
             if metadata.get("tbl_id"):
-                image_id = metadata.get("tbl_id")
-                tbl_md = self.media_handler.get_tables(image_id=image_id)
+                table_id = metadata.get("tbl_id")
+                tbl_md = self.media_handler.get_table(table_id=table_id)
                 tbl_list.append(
                     {
                         "data": tbl_md,

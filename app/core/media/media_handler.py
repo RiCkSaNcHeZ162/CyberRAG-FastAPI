@@ -54,7 +54,7 @@ class MediaHandler:
                 ) from e
 
     def get_table(self, table_id: str) -> str:
-        table_path = settings.TABLE_DIR / f"{table_id}.png"
+        table_path = settings.TABLE_DIR / f"{table_id}.md"
         try:
             with open(table_path, "rb") as f:
                 table = f.read()
